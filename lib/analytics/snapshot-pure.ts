@@ -1,132 +1,42 @@
 /**
- * Phase 5 — Analytics engine (starting point).
- * Pure snapshot builders (no DB). Phase 4 sync calls the async wrapper in snapshot.ts;
- * Phase 5 will harden definitions, top-repo commits, hour-of-day, and tests here.
+ * Pure AnalyticsSnapshot builder. DB I/O lives in snapshot.ts.
  */
 
-import { createHash } from 'node:crypto'
-
+import { computeActivityTrend, computeAvgCommitsPerActiveDay, computeMostActiveHourUTC, computeMostActiveWeekday } from '@/lib/analytics/activity-timeseries'
+import { hashAnalyticsPayload } from '@/lib/analytics/hash'
+import { aggregateLanguagePercentages } from '@/lib/analytics/language-mix'
+import { INSUFFICIENT_COMMITS_THRESHOLD, unwrapMetric } from '@/lib/analytics/metric-result'
+import type { AnalyticsSnapshotPayload } from '@/lib/analytics/schema'
 import { computeStreaks, type ContributionDayLike } from '@/lib/analytics/streaks'
+import { buildTopRepositoriesByStars } from '@/lib/analytics/top-repo'
+import type {
+  ActivityDayRow,
+  LanguageByteRow,
+  RepoCommit90d,
+  RepoSummaryRow,
+} from '@/lib/analytics/types'
 
-export type AnalyticsSnapshotPayload = {
-  totalCommits: number
-  totalPRs: number
-  totalIssues: number
-  totalRepos: number
-  topLanguages: Array<{ language: string; percentage: number }>
-  mostActiveDay: string | null
-  mostActiveHourUTC: number | null
-  longestStreak: number
-  currentStreak: number
-  topRepositories: Array<{ name: string; commitsLast90d: number; stars: number }>
-  activityTrend: 'up' | 'down' | 'flat'
-  windowDays: number
-}
-
-export type ActivityDayRow = {
-  day: string
-  commits: number
-  pullRequests: number
-  issues: number
-}
-
-export type RepoSummaryRow = {
-  id: bigint
-  name: string
-  stargazersCount: number
-}
-
-export type LanguageByteRow = {
-  language: string
-  bytes: bigint
-}
-
-const WEEKDAY_LABELS = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-] as const
-
-export function hashAnalyticsPayload(payload: AnalyticsSnapshotPayload): string {
-  return createHash('sha256').update(JSON.stringify(payload)).digest('hex')
-}
-
-export function aggregateLanguagePercentages(
-  rows: LanguageByteRow[],
-  limit = 5,
-): Array<{ language: string; percentage: number }> {
-  const bytesByLanguage = new Map<string, bigint>()
-  for (const row of rows) {
-    const prev = bytesByLanguage.get(row.language) ?? BigInt(0)
-    bytesByLanguage.set(row.language, prev + row.bytes)
-  }
-  const totalBytes = [...bytesByLanguage.values()].reduce(
-    (a, b) => a + b,
-    BigInt(0),
-  )
-  return [...bytesByLanguage.entries()]
-    .map(([language, bytes]) => ({
-      language,
-      percentage:
-        totalBytes > BigInt(0)
-          ? Math.round((Number(bytes) / Number(totalBytes)) * 1000) / 10
-          : 0,
-    }))
-    .sort((a, b) => b.percentage - a.percentage)
-    .slice(0, limit)
-}
-
-export function computeMostActiveWeekday(activityRows: ActivityDayRow[]): string | null {
-  const weekdayTotals = new Map<number, number>()
-  for (const row of activityRows) {
-    const weekday = new Date(`${row.day}T12:00:00.000Z`).getUTCDay()
-    weekdayTotals.set(weekday, (weekdayTotals.get(weekday) ?? 0) + row.commits)
-  }
-  let mostActiveDay: string | null = null
-  let bestWeekdayCount = 0
-  for (const [weekday, count] of weekdayTotals.entries()) {
-    if (count > bestWeekdayCount) {
-      bestWeekdayCount = count
-      mostActiveDay = WEEKDAY_LABELS[weekday] ?? null
-    }
-  }
-  return mostActiveDay
-}
-
-export function computeActivityTrend(
-  activityRows: ActivityDayRow[],
-  window90Start: string,
-  window180Start: string,
-): 'up' | 'down' | 'flat' {
-  const recent90 = activityRows.filter((r) => r.day >= window90Start)
-  const prev90 = activityRows.filter(
-    (r) => r.day >= window180Start && r.day < window90Start,
-  )
-  const recentSum = recent90.reduce((s, r) => s + r.commits, 0)
-  const prevSum = prev90.reduce((s, r) => s + r.commits, 0)
-  if (recentSum > prevSum) return 'up'
-  if (recentSum < prevSum) return 'down'
-  return 'flat'
-}
-
-export function buildTopRepositoriesByStars(
-  repoRows: RepoSummaryRow[],
-  limit = 5,
-): Array<{ name: string; commitsLast90d: number; stars: number; id: bigint }> {
-  return repoRows
-    .map((repo) => ({
-      name: repo.name,
-      commitsLast90d: 0,
-      stars: repo.stargazersCount,
-      id: repo.id,
-    }))
-    .sort((a, b) => b.stars - a.stars)
-    .slice(0, limit)
-}
+export type { AnalyticsSnapshotPayload } from '@/lib/analytics/schema'
+export type {
+  ActivityDayRow,
+  LanguageByteRow,
+  RepoCommit90d,
+  RepoSummaryRow,
+} from '@/lib/analytics/types'
+export { hashAnalyticsPayload } from '@/lib/analytics/hash'
+export { aggregateLanguagePercentages, computeMostUsedLanguage } from '@/lib/analytics/language-mix'
+export {
+  computeActivityTrend,
+  computeAvgCommitsPerActiveDay,
+  computeMostActiveHourUTC,
+  computeMostActiveWeekday,
+} from '@/lib/analytics/activity-timeseries'
+export { buildTopRepositoriesByStars, computeMostActiveRepo } from '@/lib/analytics/top-repo'
+export {
+  INSUFFICIENT_COMMITS_THRESHOLD,
+  unwrapMetric,
+  type MetricResult,
+} from '@/lib/analytics/metric-result'
 
 export function buildAnalyticsSnapshotPayload(input: {
   activityRows: ActivityDayRow[]
@@ -136,21 +46,30 @@ export function buildAnalyticsSnapshotPayload(input: {
   windowDays: number
   window90Start: string
   window180Start: string
+  commitHoursUtc?: number[]
+  repoCommitsLast90d?: RepoCommit90d[]
+  now?: Date
 }): AnalyticsSnapshotPayload {
   const totalCommits = input.activityRows.reduce((sum, row) => sum + row.commits, 0)
   const totalPrs = input.activityRows.reduce((sum, row) => sum + row.pullRequests, 0)
   const totalIssues = input.activityRows.reduce((sum, row) => sum + row.issues, 0)
   const totalRepos = input.repoRows.length
+  const insufficientData = totalCommits < INSUFFICIENT_COMMITS_THRESHOLD
 
   const topLanguages = aggregateLanguagePercentages(input.languageRows)
-  const mostActiveDay = computeMostActiveWeekday(input.activityRows)
-  const { currentStreak, longestStreak } = computeStreaks(input.contributionDays)
-  const topRepoRows = buildTopRepositoriesByStars(input.repoRows)
+  const mostActiveDay = unwrapMetric(computeMostActiveWeekday(input.activityRows))
+  const mostActiveHourUTC =
+    input.commitHoursUtc === undefined
+      ? null
+      : unwrapMetric(computeMostActiveHourUTC(input.commitHoursUtc))
+  const { currentStreak, longestStreak } = computeStreaks(input.contributionDays, input.now)
+  const topRepoRows = buildTopRepositoriesByStars(input.repoRows, input.repoCommitsLast90d)
   const activityTrend = computeActivityTrend(
     input.activityRows,
     input.window90Start,
     input.window180Start,
   )
+  const avgCommitsPerActiveDay = unwrapMetric(computeAvgCommitsPerActiveDay(input.activityRows))
 
   return {
     totalCommits,
@@ -159,7 +78,7 @@ export function buildAnalyticsSnapshotPayload(input: {
     totalRepos,
     topLanguages,
     mostActiveDay,
-    mostActiveHourUTC: null,
+    mostActiveHourUTC,
     longestStreak,
     currentStreak,
     topRepositories: topRepoRows.map(({ name, commitsLast90d, stars }) => ({
@@ -169,6 +88,8 @@ export function buildAnalyticsSnapshotPayload(input: {
     })),
     activityTrend,
     windowDays: input.windowDays,
+    avgCommitsPerActiveDay,
+    insufficientData,
   }
 }
 

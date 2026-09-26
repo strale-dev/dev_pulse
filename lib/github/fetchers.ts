@@ -11,9 +11,9 @@ import type {
 } from '@/lib/github/types'
 
 const CONTRIBUTION_CALENDAR_QUERY = `
-  query ContributionCalendar($from: DateTime!, $to: DateTime!) {
+  query ContributionCalendar($from: DateTime!, $to: DateTime!, $from90: DateTime!) {
     viewer {
-      contributionsCollection(from: $from, to: $to) {
+      calendar: contributionsCollection(from: $from, to: $to) {
         contributionCalendar {
           totalContributions
           weeks {
@@ -22,6 +22,17 @@ const CONTRIBUTION_CALENDAR_QUERY = `
               contributionCount
               contributionLevel
             }
+          }
+        }
+      }
+      last90: contributionsCollection(from: $from90, to: $to) {
+        commitContributionsByRepository(maxRepositories: 100) {
+          repository {
+            name
+            databaseId
+          }
+          contributions {
+            totalCount
           }
         }
       }
@@ -52,13 +63,16 @@ export function contributionLevelFromGraphql(
   return contributionLevelToSmallint(level)
 }
 
-export function calendarWindowUtc(): { from: string; to: string } {
+export function calendarWindowUtc(): { from: string; to: string; from90: string } {
   const to = new Date()
   to.setUTCHours(23, 59, 59, 999)
   const from = new Date(to)
   from.setUTCDate(from.getUTCDate() - 52 * 7)
   from.setUTCHours(0, 0, 0, 0)
-  return { from: from.toISOString(), to: to.toISOString() }
+  const from90 = new Date(to)
+  from90.setUTCDate(from90.getUTCDate() - 90)
+  from90.setUTCHours(0, 0, 0, 0)
+  return { from: from.toISOString(), to: to.toISOString(), from90: from90.toISOString() }
 }
 
 export async function fetchProfile(octokit: DevPulseOctokit): Promise<GitHubUser> {
@@ -94,13 +108,19 @@ export async function fetchLanguages(
 
 type GraphqlCalendarResponse = {
   viewer: {
-    contributionsCollection: {
+    calendar: {
       contributionCalendar: {
         totalContributions: number
         weeks: Array<{
           contributionDays: ContributionDayPayload[]
         }>
       }
+    }
+    last90: {
+      commitContributionsByRepository: Array<{
+        repository: { name: string; databaseId: number | null }
+        contributions: { totalCount: number }
+      }>
     }
   }
 }
@@ -109,18 +129,27 @@ export async function fetchContributionCalendar(
   graphqlClient: ReturnType<typeof import('@octokit/graphql').graphql.defaults>,
 ): Promise<ContributionCalendarResult> {
   return runQueued(async () => {
-    const { from, to } = calendarWindowUtc()
+    const { from, to, from90 } = calendarWindowUtc()
     const data = await graphqlClient<GraphqlCalendarResponse>(CONTRIBUTION_CALENDAR_QUERY, {
       from,
       to,
+      from90,
     })
 
-    const calendar = data.viewer.contributionsCollection.contributionCalendar
+    const calendar = data.viewer.calendar.contributionCalendar
     const days = calendar.weeks.flatMap((week) => week.contributionDays)
+    const repoCommitsLast90d = data.viewer.last90.commitContributionsByRepository
+      .filter((entry) => entry.repository.databaseId != null)
+      .map((entry) => ({
+        id: BigInt(entry.repository.databaseId as number),
+        name: entry.repository.name,
+        commits: entry.contributions.totalCount,
+      }))
 
     return {
       days,
       totalContributions: calendar.totalContributions,
+      repoCommitsLast90d,
     }
   })
 }

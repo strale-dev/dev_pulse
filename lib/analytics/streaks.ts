@@ -1,6 +1,6 @@
 /**
- * Phase 5 — Analytics engine (starting point).
- * Pure streak helpers; expand edge cases + timezone coverage in Phase 5 Vitest suite.
+ * Pure streak helpers. Days are UTC calendar dates (`YYYY-MM-DD`).
+ * Pass `now` in tests so timezone / year-boundary cases stay deterministic.
  */
 
 export type ContributionDayLike = {
@@ -18,7 +18,10 @@ function addUtcDays(day: string, delta: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export function computeStreaks(days: ContributionDayLike[]): {
+export function computeStreaks(
+  days: ContributionDayLike[],
+  now: Date = new Date(),
+): {
   currentStreak: number
   longestStreak: number
 } {
@@ -48,7 +51,7 @@ export function computeStreaks(days: ContributionDayLike[]): {
   }
 
   const activeSet = new Set(activeDays)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = now.toISOString().slice(0, 10)
   const yesterday = addUtcDays(today, -1)
 
   let anchor: string | null = null
@@ -70,9 +73,9 @@ export function computeStreaks(days: ContributionDayLike[]): {
   return { currentStreak: current, longestStreak: longest }
 }
 
-/** Test helper: UTC date string offset from today. */
-export function utcDayOffsetFromToday(offsetDays: number): string {
-  const d = new Date()
+/** Test helper: UTC date string offset from `now` (defaults to real now). */
+export function utcDayOffsetFromToday(offsetDays: number, now = new Date()): string {
+  const d = new Date(now)
   d.setUTCHours(0, 0, 0, 0)
   d.setUTCDate(d.getUTCDate() + offsetDays)
   return d.toISOString().slice(0, 10)

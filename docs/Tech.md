@@ -101,7 +101,7 @@ The repository is **not empty**. The following is already in place and we build 
 
 ### 2.3 External APIs
 - **GitHub REST v3** via `@octokit/rest` — profile, repos, languages, commit stats.
-- **GitHub GraphQL v4** via `@octokit/graphql` — `viewer.contributionsCollection.contributionCalendar` (heatmap, streaks) + aggregated PR/issue counts.
+- **GitHub GraphQL v4** via `@octokit/graphql` — one `contributionsCollection` operation: 52-week `contributionCalendar` (heatmap, streaks) and 90-day `commitContributionsByRepository` (most active repo). PR/issue counts come from REST events, not GraphQL.
 - **OpenAI** (`gpt-4o-mini` or `gpt-4.1-mini`) via **Vercel AI SDK** — structured Insights output via Zod.
 
 ### 2.4 Infrastructure
@@ -265,8 +265,8 @@ Dashboard RSC detects: no analytics_snapshot for user
           1. fetchProfile()              (REST)
           2. fetchRepos()                (REST, paged)
           3. for repo in repos: fetchLanguages(repo)   (REST, queued)
-          4. fetchContributionCalendar() (GraphQL, single call — 52 weeks)
-          5. fetchRecentEvents(90d)      (REST, for commit timing)
+          4. fetchContributionCalendar() (GraphQL, single call — 52w calendar + 90d commitContributionsByRepository)
+          5. fetchRecentEvents(90d)      (REST, PR/issue counts + PushEvent hours)
           6. persist all → Postgres
           7. compute analytics-snapshot  (pure TS)
           8. persist snapshot
@@ -358,7 +358,10 @@ Light theme stays defined but is unused (dark-only in MVP). We keep `.dark` sele
 - All calls flow through `lib/github/queue.ts` (a p-queue with concurrency=4).
 - Conditional requests: pass `If-None-Match` where applicable (repos list) to reduce quota usage.
 - Rate-limit metadata (`x-ratelimit-remaining`, `x-ratelimit-reset`) exposed on a `/settings` debug row.
-- GraphQL is used **only** for `contributionsCollection` (calendar + streak) — one call replaces dozens of REST calls.
+- GraphQL is used **only** via `contributionsCollection`, in **one HTTP round-trip** per sync (`fetchContributionCalendar()`). That single operation queries `viewer` twice with GraphQL field aliases (not a second GraphQL request):
+  - **`calendar`** — `contributionsCollection(from: 52w, to: now)` → `contributionCalendar` (heatmap cells, streaks).
+  - **`last90`** — `contributionsCollection(from: 90d, to: now)` → `commitContributionsByRepository` (most active repo by commit count in the last 90 days; in-memory only for analytics, not persisted).
+- PR/issue timing and **most active hour (UTC)** come from REST public events (`fetchRecentEvents`), not from GraphQL.
 
 ---
 

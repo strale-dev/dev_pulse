@@ -54,6 +54,10 @@ describe('empty GitHub account payloads', () => {
       longestStreak: 0,
       currentStreak: 0,
       activityTrend: 'flat',
+      insufficientData: true,
+      avgCommitsPerActiveDay: null,
+      mostActiveDay: null,
+      mostActiveHourUTC: null,
     })
   })
 })

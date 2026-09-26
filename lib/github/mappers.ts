@@ -245,3 +245,30 @@ export function mapActivityEvents(
 
   return [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day))
 }
+
+type PushEventPayload = {
+  size?: number
+  commits?: unknown[]
+}
+
+function pushCommitCount(payload: unknown): number {
+  if (!payload || typeof payload !== 'object') return 1
+  const push = payload as PushEventPayload
+  if (typeof push.size === 'number' && push.size > 0) return push.size
+  if (Array.isArray(push.commits) && push.commits.length > 0) return push.commits.length
+  return 1
+}
+
+/** UTC hours of authored commits from public PushEvents (one entry per commit). */
+export function extractCommitHoursUtc(events: GitHubPublicEvent[]): number[] {
+  const hours: number[] = []
+  for (const event of events) {
+    if (event.type !== 'PushEvent' || !event.created_at) continue
+    const hour = new Date(event.created_at).getUTCHours()
+    const count = pushCommitCount(event.payload)
+    for (let i = 0; i < count; i += 1) {
+      hours.push(hour)
+    }
+  }
+  return hours
+}

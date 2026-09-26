@@ -19,7 +19,14 @@ export type ContributionDayPayload = {
     | 'FOURTH_QUARTILE'
 }
 
+export type RepoCommit90dPayload = {
+  id: bigint
+  name: string
+  commits: number
+}
+
 export type ContributionCalendarResult = {
   days: ContributionDayPayload[]
   totalContributions: number
+  repoCommitsLast90d: RepoCommit90dPayload[]
 }

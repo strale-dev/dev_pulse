@@ -7,6 +7,16 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/setup-server-only.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['lib/analytics/**/*.ts'],
+      reporter: ['text', 'json-summary'],
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        statements: 90,
+      },
+    },
   },
   resolve: {
     alias: {

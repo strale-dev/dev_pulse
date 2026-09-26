@@ -1,18 +1,19 @@
 import 'server-only'
 
 /**
- * Phase 5 — Analytics engine (starting point, not Phase 4 exit criteria).
  * Loads synced rows from Postgres and persists `analytics_snapshots`.
- * Pure rollup logic lives in snapshot-pure.ts (Vitest-covered); expand in Phase 5.
+ * Pure rollup logic lives in snapshot-pure.ts.
  */
 
 import { and, eq, gte } from 'drizzle-orm'
 
 import {
   buildAnalyticsSnapshotPayload,
+  computeMostActiveRepo,
   hashAnalyticsPayload,
   windowStartDateFromToday,
   type AnalyticsSnapshotPayload,
+  type RepoCommit90d,
 } from '@/lib/analytics/snapshot-pure'
 import { db } from '@/lib/db'
 import {
@@ -45,6 +46,8 @@ export type BuiltAnalyticsSnapshot = {
 export async function buildAnalyticsSnapshot(input: {
   userId: string
   windowDays?: number
+  commitHoursUtc?: number[]
+  repoCommitsLast90d?: RepoCommit90d[]
 }): Promise<BuiltAnalyticsSnapshot> {
   const windowDays = input.windowDays ?? 365
   const windowStart = windowStartDateFromToday(windowDays)
@@ -92,10 +95,21 @@ export async function buildAnalyticsSnapshot(input: {
     windowDays,
     window90Start,
     window180Start,
+    commitHoursUtc: input.commitHoursUtc,
+    repoCommitsLast90d: input.repoCommitsLast90d,
   })
 
   const topLanguage = payload.topLanguages[0]?.language ?? null
-  const topRepositoryId = repoRows.find((r) => r.name === payload.topRepositories[0]?.name)?.id ?? null
+  let topRepositoryId: bigint | null = null
+  if (input.repoCommitsLast90d) {
+    const mostActive = computeMostActiveRepo(input.repoCommitsLast90d)
+    if (mostActive.status === 'ok') {
+      topRepositoryId =
+        repoRows.find((row) => row.id === mostActive.value.id)?.id ??
+        repoRows.find((row) => row.name === mostActive.value.name)?.id ??
+        mostActive.value.id
+    }
+  }
 
   return {
     payload,

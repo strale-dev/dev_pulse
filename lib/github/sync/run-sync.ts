@@ -20,6 +20,7 @@ import {
 } from '@/lib/github/fetchers'
 import type { RepositoryLanguageInsert } from '@/lib/github/mappers'
 import {
+  extractCommitHoursUtc,
   mapActivityEvents,
   mapCalendarToContributionDays,
   mapLanguagesToRows,
@@ -27,7 +28,12 @@ import {
   mapProfileToProfilesPatch,
   mapRepoToRow,
 } from '@/lib/github/mappers'
-import type { ContributionDayPayload, GitHubRepo, GitHubUser } from '@/lib/github/types'
+import type {
+  ContributionDayPayload,
+  GitHubRepo,
+  GitHubUser,
+  RepoCommit90dPayload,
+} from '@/lib/github/types'
 import {
   createGraphqlClient,
   createOctokit,
@@ -136,7 +142,9 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
   let profile: GitHubUser | null = null
   let repos: GitHubRepo[] | null = null
   let calendarDays: ContributionDayPayload[] | null = null
+  let repoCommitsLast90d: RepoCommit90dPayload[] | null = null
   let events: Awaited<ReturnType<typeof fetchRecentEvents>> | null = null
+  let commitHoursUtc: number[] | null = null
   let languageRows: RepositoryLanguageInsert[] = []
   let login = ''
 
@@ -217,6 +225,7 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
       await emit(syncRunId, options.onProgress, steps, 'Fetching contribution calendar…')
       const calendar = await fetchContributionCalendar(graphqlClient)
       calendarDays = calendar.days
+      repoCommitsLast90d = calendar.repoCommitsLast90d
       steps = setStepSuccess(steps, 'contribution_calendar', Date.now() - started)
       await emit(syncRunId, options.onProgress, steps, 'Contribution calendar fetched.')
     }
@@ -236,6 +245,7 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
         login = profile.login
       }
       events = await fetchRecentEvents(octokit, login)
+      commitHoursUtc = extractCommitHoursUtc(events)
       steps = setStepSuccess(steps, 'events', Date.now() - started)
       await emit(syncRunId, options.onProgress, steps, 'Events fetched.')
     }
@@ -297,7 +307,11 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
       const started = Date.now()
       steps = setStepRunning(steps, 'analytics_snapshot')
       await emit(syncRunId, options.onProgress, steps, 'Computing analytics snapshot…')
-      const snapshot = await buildAnalyticsSnapshot({ userId: options.userId })
+      const snapshot = await buildAnalyticsSnapshot({
+        userId: options.userId,
+        ...(commitHoursUtc ? { commitHoursUtc } : {}),
+        ...(repoCommitsLast90d ? { repoCommitsLast90d } : {}),
+      })
       await persistAnalyticsSnapshot(options.userId, snapshot)
       steps = setStepSuccess(steps, 'analytics_snapshot', Date.now() - started)
       await emit(syncRunId, options.onProgress, steps, 'Analytics snapshot saved.')
