@@ -50,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "dark h-full antialiased",
         geistSans.variable,
@@ -59,7 +60,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         spaceGroteskHeading.variable
       )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
+        {children}
+      </body>
     </html>
   );
 }

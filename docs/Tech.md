@@ -402,7 +402,8 @@ Light theme stays defined but is unused (dark-only in MVP). We keep `.dark` sele
 | `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase project URL | ✅ `.env.local` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | client + server | Publishable anon key | ✅ `.env.local` |
 | `SUPABASE_SERVICE_ROLE_KEY` | server-only | Service role for admin ops (Drizzle over PG uses `DATABASE_URL` — this is only for admin auth ops) | ❌ add in Phase 2 |
-| `DATABASE_URL` | server-only | Direct Postgres connection for Drizzle (pooler URL from Supabase) | ❌ add in Phase 3 |
+| `DATABASE_URL` | server-only | Supabase **transaction** pooler (`:6543`) for Drizzle runtime in Next.js | ✅ `.env.local` (URL-encode password if it contains `?` `@` etc.) |
+| `DIRECT_URL` | server-only | Supabase **session** pooler (`:5432`) for `drizzle-kit push` / studio (IPv4-friendly on Windows) | ✅ `.env.local` |
 | `SUPABASE_TOKEN_ENCRYPTION_KEY` | server-only | Key for pgcrypto `pgp_sym_encrypt` | ❌ add in Phase 2 |
 | `OPENAI_API_KEY` | server-only | AI insights | ❌ add in Phase 8 |
 | `OPENAI_INSIGHTS_MODEL` | server-only | Model override (default `gpt-4o-mini`) | ❌ add in Phase 8 |
@@ -458,7 +459,7 @@ Each phase must be **complete and verifiable** before starting the next (per PRD
 
 ### Phase 3 — Database (½ day)
 - Install `drizzle-orm`, `drizzle-kit`, `pg`.
-- Add `drizzle.config.ts` pointing at `DATABASE_URL` (Supabase pooler).
+- Add `drizzle.config.ts` pointing at `DIRECT_URL` (session pooler); runtime `lib/db` uses `DATABASE_URL` (transaction pooler `:6543`).
 - Author `lib/db/schema.ts` from `DB.md`.
 - Generate `drizzle/0000_init.sql`; apply via Supabase MCP (`apply_migration`).
 - Enable RLS + policies on every table.

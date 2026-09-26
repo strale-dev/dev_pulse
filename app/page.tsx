@@ -1,6 +1,7 @@
-import { GithubLogo } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
@@ -22,15 +23,15 @@ export default function Home() {
           <li>Repository &amp; language breakdown</li>
           <li>AI Developer Insights</li>
         </ul>
-        <Button
-          className="mt-10 h-9 gap-2 px-4 text-sm"
-          size="lg"
-          disabled
-          aria-disabled
+        <Link
+          href="/auth/login"
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "mt-10 h-9 gap-2 px-4 text-sm"
+          )}
         >
-          <GithubLogo weight="fill" className="size-4" aria-hidden />
           Sign in with GitHub
-        </Button>
+        </Link>
       </main>
     </div>
   );

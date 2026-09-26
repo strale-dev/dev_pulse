@@ -21,3 +21,12 @@ Rules:
 - Follow the database schema before creating or changing tables.
 - Follow the design system from cursor rules before building UI.
 
+## Terminal / Shell
+Ovo je Windows okruženje. Kada pokrećeš terminal komande preko npm/pnpm/npx,
+uvek koristi .cmd ekstenziju (npm.cmd, pnpm.cmd, npx.cmd), jer se inače
+komanda ne prepoznaje u ovom shell-u.
+
+Primeri:
+- `npm.cmd run dev` umesto `npm run dev`
+- `pnpm.cmd install` umesto `pnpm install`
+- `npx.cmd drizzle-kit push` umesto `npx drizzle-kit push`
