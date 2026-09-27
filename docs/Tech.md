@@ -506,7 +506,8 @@ Each phase must be **complete and verifiable** before starting the next (per PRD
 - `ActivityChart` (7D / 30D / 90D / 1Y toggle).
 - `ContributionHeatmap` (custom SVG/CSS grid, 52 × 7).
 - `LanguageDonut`.
-- ✅ Exit criteria: all three renders match GitHub's own visuals in structure.
+- **Development statistics** section on dashboard (**PRD F9**, §6.7 metrics; omit when insufficient).
+- ✅ Exit criteria: all three chart renders match GitHub's own visuals in structure; F9 stats block shows real snapshot-derived metrics.
 
 ### Phase 8 — AI Insights (½ day)
 - Add `ai`, `@ai-sdk/openai`, `zod`.

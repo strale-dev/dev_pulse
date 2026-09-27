@@ -32,3 +32,7 @@ Primeri:
 - `npx.cmd drizzle-kit push` umesto `npx drizzle-kit push`
 
 Dev/build koriste **Webpack** (`--webpack`) jer Turbopack persistence keš na Windows-u lako korumpira `.next`. Za Turbopack: `pnpm.cmd run dev:turbo` (samo posle čistog `.next`, bez ručnih kopija u kešu).
+
+**Zavisnosti:** ovaj repo je `pnpm`-only (`packageManager` u `package.json`). Za install/add uvek `corepack pnpm install` / `corepack pnpm add …`. **Ne pokreći `npm install`** — meša se sa pnpm `node_modules` (`.ignored_*` folderi), `pnpm install` pada na `Invalid Version` pri linkovanju binara, a paketi poput `recharts` ne budu linkovani → Next build: `Can't resolve 'recharts'`. Oporavak: obriši `node_modules` i pokreni `corepack pnpm install` (lockfile ostaje izvor istine).
+
+Posle reinstalacije `node_modules` obriši i **`.next`** pre `dev`/`build`. Webpack keš pamti apsolutne putanje u `node_modules/.pnpm/…` (npr. `zustand@5.0.15_@types+react_<hash>`); kad se peer hash promeni, stari keš daje `ENOENT` na `…/zustand/esm/index.mjs` iako je paket ispravno instaliran.

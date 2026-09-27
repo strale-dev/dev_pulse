@@ -6,6 +6,84 @@ import {
 } from '@/lib/analytics/metric-result'
 import type { ActivityDayRow } from '@/lib/analytics/types'
 
+export const ACTIVITY_CHART_RANGES = {
+  '7D': 7,
+  '30D': 30,
+  '90D': 90,
+  '1Y': 365,
+} as const
+
+export type ActivityChartRangeKey = keyof typeof ACTIVITY_CHART_RANGES
+
+export type ActivityChartPoint = {
+  day: string
+  commits: number
+  pullRequests: number
+  issues: number
+}
+
+function windowStartForRange(rangeDays: number, today = new Date()): string {
+  const d = new Date(today)
+  d.setUTCDate(d.getUTCDate() - rangeDays)
+  return d.toISOString().slice(0, 10)
+}
+
+function addUtcCalendarDays(day: string, delta: number): string {
+  const d = new Date(`${day}T00:00:00.000Z`)
+  d.setUTCDate(d.getUTCDate() + delta)
+  return d.toISOString().slice(0, 10)
+}
+
+export function sliceActivityDays(
+  rows: ActivityDayRow[],
+  rangeDays: number,
+  now = new Date(),
+): ActivityDayRow[] {
+  const start = windowStartForRange(rangeDays, now)
+  return rows.filter((row) => row.day >= start)
+}
+
+export function fillActivityChartSeries(
+  rows: ActivityDayRow[],
+  rangeDays: number,
+  now = new Date(),
+): ActivityChartPoint[] {
+  const start = windowStartForRange(rangeDays, now)
+  const end = now.toISOString().slice(0, 10)
+  const byDay = new Map(
+    rows.map((row) => [
+      row.day,
+      {
+        day: row.day,
+        commits: row.commits,
+        pullRequests: row.pullRequests,
+        issues: row.issues,
+      },
+    ]),
+  )
+
+  const points: ActivityChartPoint[] = []
+  let cursor = start
+  while (cursor <= end) {
+    points.push(
+      byDay.get(cursor) ?? {
+        day: cursor,
+        commits: 0,
+        pullRequests: 0,
+        issues: 0,
+      },
+    )
+    cursor = addUtcCalendarDays(cursor, 1)
+  }
+  return points
+}
+
+export function isActivityRangeEmpty(points: ActivityChartPoint[]): boolean {
+  return points.every(
+    (point) => point.commits + point.pullRequests + point.issues === 0,
+  )
+}
+
 export const WEEKDAY_LABELS = [
   'Sunday',
   'Monday',

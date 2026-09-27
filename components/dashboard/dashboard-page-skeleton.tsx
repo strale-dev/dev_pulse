@@ -49,6 +49,59 @@ export function DashboardPageSkeleton() {
         <PanelSkeleton rows={5} />
         <PanelSkeleton rows={5} />
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[280px] w-full" />
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="h-full">
+          <CardHeader>
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6 lg:flex-row">
+            <Skeleton className="h-28 w-full max-w-md" />
+            <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="h-full">
+          <CardHeader>
+            <Skeleton className="h-4 w-28" />
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-6 md:flex-row">
+            <Skeleton className="size-[220px] shrink-0 rounded-full" />
+            <div className="w-full flex-1 space-y-3">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-4 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-4 w-44" />
+          <Skeleton className="mt-2 h-3 w-full max-w-md" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <Skeleton key={index} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

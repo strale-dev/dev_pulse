@@ -2,6 +2,10 @@ import type { Metadata } from 'next'
 import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { ActivityChart } from '@/components/dashboard/activity-chart'
+import { DevelopmentStats } from '@/components/dashboard/development-stats'
+import { ContributionHeatmap } from '@/components/dashboard/contribution-heatmap'
+import { LanguageDonut } from '@/components/dashboard/language-donut'
 import { OverviewCards } from '@/components/dashboard/overview-cards'
 import { RecentActivityList } from '@/components/dashboard/recent-activity-list'
 import { TopReposPreview } from '@/components/dashboard/top-repos-preview'
@@ -51,6 +55,15 @@ export default async function DashboardPage() {
         <TopReposPreview repos={data.topRepos} />
         <RecentActivityList days={data.recentActivity} />
       </div>
+
+      <ActivityChart days={data.activityDays} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ContributionHeatmap weeks={data.contributionWeeks} stats={data.heatmapStats} />
+        <LanguageDonut segments={data.languageSegments} />
+      </div>
+
+      <DevelopmentStats stats={data.developmentStats} />
     </div>
   )
 }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { aggregateLanguagePercentages, computeMostUsedLanguage } from '@/lib/analytics/language-mix'
+import {
+  aggregateLanguageBreakdown,
+  aggregateLanguagePercentages,
+  computeMostUsedLanguage,
+} from '@/lib/analytics/language-mix'
 
 describe('computeMostUsedLanguage', () => {
   it('returns the language with the highest byte share', () => {
@@ -20,6 +24,31 @@ describe('computeMostUsedLanguage', () => {
     expect(computeMostUsedLanguage([{ language: 'Go', bytes: BigInt(0) }])).toEqual({
       status: 'insufficient_data',
     })
+  })
+})
+
+describe('aggregateLanguageBreakdown', () => {
+  it('groups languages beyond the limit into Other', () => {
+    const breakdown = aggregateLanguageBreakdown(
+      [
+        { language: 'TypeScript', bytes: BigInt(500) },
+        { language: 'JavaScript', bytes: BigInt(300) },
+        { language: 'CSS', bytes: BigInt(100) },
+        { language: 'HTML', bytes: BigInt(50) },
+        { language: 'Go', bytes: BigInt(40) },
+        { language: 'Rust', bytes: BigInt(10) },
+      ],
+      5,
+    )
+    expect(breakdown.map((entry) => entry.language)).toEqual([
+      'TypeScript',
+      'JavaScript',
+      'CSS',
+      'HTML',
+      'Go',
+      'Other',
+    ])
+    expect(breakdown.find((entry) => entry.language === 'Other')?.percentage).toBe(1)
   })
 })
 

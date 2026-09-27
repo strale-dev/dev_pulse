@@ -1,16 +1,32 @@
 import 'server-only'
 
-import { and, desc, eq, gt, or } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, or } from 'drizzle-orm'
 
+import { computeMostActiveWeekday } from '@/lib/analytics/activity-timeseries'
+import {
+  groupContributionDaysIntoWeeks,
+  sumContributions,
+  type ContributionGridCell,
+} from '@/lib/analytics/contribution-grid'
+import { aggregateLanguageBreakdown } from '@/lib/analytics/language-mix'
+import { unwrapMetric } from '@/lib/analytics/metric-result'
 import type { AnalyticsSnapshotPayload } from '@/lib/analytics/schema'
+import { computeStreaks } from '@/lib/analytics/streaks'
+import {
+  buildDevelopmentStats,
+  type DashboardDevelopmentStats,
+} from '@/lib/dashboard/build-development-stats'
 import { computePeriodDeltas, type PeriodDeltas } from '@/lib/dashboard/compute-period-deltas'
 import { db } from '@/lib/db'
 import {
   activityEvents,
   analyticsSnapshots,
+  contributionDays,
   profiles,
   repositories,
+  repositoryLanguages,
 } from '@/lib/db/schema'
+import { getGitHubLanguageColor } from '@/lib/github/language-colors'
 
 export type DashboardTopRepo = {
   id: string
@@ -38,14 +54,39 @@ export type DashboardOverview = {
   deltas: PeriodDeltas
 }
 
+export type DashboardHeatmapStats = {
+  totalContributions: number
+  currentStreak: number
+  longestStreak: number
+  mostActiveDay: string | null
+}
+
+export type DashboardLanguageSegment = {
+  language: string
+  percentage: number
+  color: string
+}
+
 export type DashboardData = {
   overview: DashboardOverview
   topRepos: DashboardTopRepo[]
   recentActivity: DashboardRecentDay[]
+  activityDays: DashboardRecentDay[]
+  contributionWeeks: ContributionGridCell[][]
+  heatmapStats: DashboardHeatmapStats
+  languageSegments: DashboardLanguageSegment[]
+  developmentStats: DashboardDevelopmentStats
 }
 
 export async function loadDashboard(userId: string): Promise<DashboardData> {
-  const [snapshotRows, previousSnapshotRows, activityRows, topRepoRows] = await Promise.all([
+  const [
+    snapshotRows,
+    previousSnapshotRows,
+    activityRows,
+    topRepoRows,
+    contributionRows,
+    languageRows,
+  ] = await Promise.all([
     db
       .select({
         totalCommits: analyticsSnapshots.totalCommits,
@@ -87,6 +128,22 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
       .where(eq(repositories.userId, userId))
       .orderBy(desc(repositories.stargazersCount))
       .limit(6),
+    db
+      .select({
+        day: contributionDays.day,
+        contributions: contributionDays.contributions,
+        level: contributionDays.level,
+      })
+      .from(contributionDays)
+      .where(eq(contributionDays.userId, userId))
+      .orderBy(asc(contributionDays.day)),
+    db
+      .select({
+        language: repositoryLanguages.language,
+        bytes: repositoryLanguages.bytes,
+      })
+      .from(repositoryLanguages)
+      .where(eq(repositoryLanguages.userId, userId)),
   ])
 
   const snapshot = snapshotRows[0]
@@ -156,7 +213,76 @@ export async function loadDashboard(userId: string): Promise<DashboardData> {
     issues: row.issues,
   }))
 
-  return { overview, topRepos, recentActivity }
+  const activityDays: DashboardRecentDay[] = activityDayRows
+
+  const contributionGridCells: ContributionGridCell[] = contributionRows.map((row) => ({
+    day: String(row.day),
+    contributions: row.contributions,
+    level: row.level,
+  }))
+
+  const { currentStreak, longestStreak } = computeStreaks(
+    contributionGridCells.map((day) => ({
+      day: day.day,
+      contributions: day.contributions,
+    })),
+  )
+
+  const heatmapStats: DashboardHeatmapStats = {
+    totalContributions: sumContributions(contributionGridCells),
+    currentStreak,
+    longestStreak,
+    mostActiveDay: unwrapMetric(computeMostActiveWeekday(activityDayRows)),
+  }
+
+  const languageSegments: DashboardLanguageSegment[] = aggregateLanguageBreakdown(
+    languageRows.map((row) => ({
+      language: row.language,
+      bytes: row.bytes,
+    })),
+  ).map((segment) => ({
+    ...segment,
+    color: getGitHubLanguageColor(segment.language),
+  }))
+
+  const repoCommitsLast90d =
+    payload?.repoCommitsLast90d?.map((row) => ({
+      id: BigInt(row.id),
+      name: row.name,
+      commits: row.commits,
+    })) ?? []
+
+  const developmentStats = buildDevelopmentStats({
+    activityRows: activityDayRows,
+    contributionDays: contributionGridCells.map((day) => ({
+      day: day.day,
+      contributions: day.contributions,
+    })),
+    languageRows: languageRows.map((row) => ({
+      language: row.language,
+      bytes: row.bytes,
+    })),
+    repoCommitsLast90d,
+    mostActiveHourUtc: payload?.mostActiveHourUTC ?? null,
+    totals: snapshot
+      ? {
+          totalCommits: snapshot.totalCommits,
+          totalPrs: snapshot.totalPrs,
+          totalIssues: snapshot.totalIssues,
+        }
+      : undefined,
+  })
+
+  return {
+    overview,
+    topRepos,
+    recentActivity,
+    activityDays,
+    contributionWeeks: groupContributionDaysIntoWeeks(contributionGridCells),
+    heatmapStats,
+    languageSegments,
+    developmentStats,
+  }
 }
 
 export type ShellUser = {
