@@ -408,8 +408,8 @@ Light theme stays defined but is unused (dark-only in MVP). We keep `.dark` sele
 | `DATABASE_URL` | server-only | Supabase **transaction** pooler (`:6543`) for Drizzle runtime in Next.js | ✅ `.env.local` (URL-encode password if it contains `?` `@` etc.) |
 | `DIRECT_URL` | server-only | Supabase **session** pooler (`:5432`) for `drizzle-kit push` / studio (IPv4-friendly on Windows) | ✅ `.env.local` |
 | `SUPABASE_TOKEN_ENCRYPTION_KEY` | server-only | Key for pgcrypto `pgp_sym_encrypt` | ❌ add in Phase 2 |
-| `OPENAI_API_KEY` | server-only | AI insights | ❌ add in Phase 8 |
-| `OPENAI_INSIGHTS_MODEL` | server-only | Model override (default `gpt-4o-mini`) | ❌ add in Phase 8 |
+| `OPENAI_API_KEY` | server-only | AI insights | ✅ `.env.local` |
+| `OPENAI_INSIGHTS_MODEL` | server-only | Model override (default `gpt-4o-mini`) | ✅ `.env.local` |
 | `SENTRY_DSN` | server + client | Error monitoring | ❌ add in Phase 10 |
 | `NEXT_PUBLIC_SITE_URL` | client + server | Canonical URL for OAuth redirects & OG images | ❌ add in Phase 2 |
 

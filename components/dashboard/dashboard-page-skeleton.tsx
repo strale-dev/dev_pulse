@@ -102,6 +102,20 @@ export function DashboardPageSkeleton() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-4 w-44" />
+          <Skeleton className="mt-2 h-3 w-full max-w-md" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-24 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

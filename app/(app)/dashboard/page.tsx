@@ -9,6 +9,8 @@ import { LanguageDonut } from '@/components/dashboard/language-donut'
 import { OverviewCards } from '@/components/dashboard/overview-cards'
 import { RecentActivityList } from '@/components/dashboard/recent-activity-list'
 import { TopReposPreview } from '@/components/dashboard/top-repos-preview'
+import { InsightSection } from '@/components/insights/insight-section'
+import { loadInsightView } from '@/lib/ai/insight-store'
 import { loadDashboard } from '@/lib/dashboard/load-dashboard'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/db/schema'
@@ -38,7 +40,10 @@ export default async function DashboardPage() {
     redirect('/onboarding')
   }
 
-  const data = await loadDashboard(user.id)
+  const [data, insights] = await Promise.all([
+    loadDashboard(user.id),
+    loadInsightView(user.id),
+  ])
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -64,6 +69,13 @@ export default async function DashboardPage() {
       </div>
 
       <DevelopmentStats stats={data.developmentStats} />
+
+      <InsightSection
+        hasSnapshot={insights.hasSnapshot}
+        snapshotHash={insights.snapshotHash}
+        initial={insights.insight}
+        generatedAt={insights.generatedAt}
+      />
     </div>
   )
 }
