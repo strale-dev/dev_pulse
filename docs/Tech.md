@@ -488,7 +488,18 @@ Each phase must be **complete and verifiable** before starting the next (per PRD
 - `components/layout/AppShell` (sidebar + header + main).
 - Overview cards, top-repos preview, recent activity list.
 - TanStack Query provider + Zustand store.
+- Sidebar nav in this phase: **Dashboard only** (no placeholder routes for unreleased pages).
 - ✅ Exit criteria: dashboard displays real data end-to-end.
+
+### Phase 6b — Repository list (PRD F7) (½ day)
+- **Scope:** full repository explorer — not the dashboard “top repos” preview (that stays in Phase 6).
+- `app/(app)/repositories/page.tsx` + `components/repositories/{RepoCard,RepoFilters,RepoList}.tsx`.
+- Sort: stars, recently updated, most active (recent push), most commits (from synced analytics inputs).
+- Client-side text search (fuzzy filter on name/description).
+- Per-card language breakdown bar (stacked bar, GitHub colors) from `repository_languages`.
+- Links open `html_url` on GitHub in a new tab.
+- Extend AppShell sidebar: add **Repositories** nav item when this phase ships.
+- ✅ Exit criteria: `/repositories` lists all synced public repos with working sort + search + language bar; empty state when user has zero repos.
 
 ### Phase 7 — Charts + heatmap (½ day)
 - Add shadcn `chart` preset + Recharts.
@@ -519,6 +530,29 @@ Each phase must be **complete and verifiable** before starting the next (per PRD
 - Complete README (screenshots, arch diagram derived from §3, setup steps, env var table from §10).
 - Push to Vercel production; verify prod deploy end-to-end.
 - ✅ Exit criteria: all PRD §9 Definition-of-Done items check out.
+
+#### PRD §5.1 feature → phase map (gaps explicitly assigned)
+
+| PRD feature | Phase |
+|---|---|
+| F1 GitHub OAuth | 2 |
+| F2 First-time sync + progress UI | 4 (UI polish in 6 onboarding) |
+| F3 Dashboard header (greeting, avatar menu) | 6 |
+| F4 Overview cards | 6 |
+| F5 Activity chart | 7 |
+| F6 Contribution heatmap | 7 |
+| **F7 Repository list (sort, search, language bar)** | **6b** |
+| F8 Languages breakdown (aggregate chart) | 7 |
+| F9 Development statistics section | 7 (dashboard stats blocks alongside charts) |
+| F10 AI Developer Insights | 8 |
+| F11 Public profile | 9 |
+| F12 Dynamic OG image | 9 |
+| F13 Command palette (⌘K) | 9 |
+| F14 Responsive UI | 6 (shell breakpoints) + 7–9 (section QA) |
+| F15 Error / loading / empty states | 6+ (per section; shared primitives in 6) |
+| F16 Production deploy | 10 |
+
+Other `(app)` routes from §3 file tree: **`/insights`** → Phase 8; **`/settings`** (public profile toggle, rate-limit debug row) → Phase 9. No **`/activity`** top-level route in MVP — activity chart lives on **`/dashboard`** (Phase 7).
 
 ---
 

@@ -246,11 +246,12 @@ Reference — full technical breakdown lives in `Tech.md §Roadmap`.
 3. **Phase 3** — DB schema + Supabase migrations (see `DB.md`).
 4. **Phase 4** — GitHub sync engine (Octokit REST + GraphQL, queue, rate limits).
 5. **Phase 5** — Analytics pipeline (pure TS functions + Vitest).
-6. **Phase 6** — Dashboard UI (sidebar layout, overview cards, states).
-7. **Phase 7** — Charts + heatmap (Recharts + custom calendar grid).
-8. **Phase 8** — AI Insights (Vercel AI SDK, Zod, cache).
-9. **Phase 9** — Public profile + OG image + ⌘K palette.
-10. **Phase 10** — Polish (responsive, motion, error boundaries, Sentry, Playwright smoke, README, prod deploy).
+6. **Phase 6** — Dashboard UI (sidebar layout, overview cards, top-repos preview, states).
+6b. **Phase 6b** — Repository list (**F7**: sort, search, language bar on `/repositories`).
+7. **Phase 7** — Charts + heatmap + languages breakdown (**F5, F6, F8, F9** on dashboard).
+8. **Phase 8** — AI Insights (Vercel AI SDK, Zod, cache; **`/insights`**).
+9. **Phase 9** — Public profile + OG image + ⌘K palette + **`/settings`**.
+10. **Phase 10** — Ship (Sentry, Playwright smoke, README, prod deploy).
 
 Each phase is independently verifiable and must be complete before starting the next.
 

@@ -30,3 +30,5 @@ Primeri:
 - `npm.cmd run dev` umesto `npm run dev`
 - `pnpm.cmd install` umesto `pnpm install`
 - `npx.cmd drizzle-kit push` umesto `npx drizzle-kit push`
+
+Dev/build koriste **Webpack** (`--webpack`) jer Turbopack persistence keš na Windows-u lako korumpira `.next`. Za Turbopack: `pnpm.cmd run dev:turbo` (samo posle čistog `.next`, bez ručnih kopija u kešu).

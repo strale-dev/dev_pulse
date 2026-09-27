@@ -1,18 +1,23 @@
 'use client'
 
-/**
- * TEMPORARY (Phase 4): polls sync_runs and lists step labels.
- * Phase 6 — redesign with shadcn Skeleton/Progress, AppShell, and proper streaming UX.
- */
-
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  CheckCircleIcon,
+  CircleIcon,
+  SpinnerIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
 import {
   getLatestSyncRunSteps,
   runFullSync,
 } from '@/app/(app)/actions/sync'
 import type { SyncStepRecord } from '@/lib/github/sync/sync-run'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 const STEP_LABELS: Record<SyncStepRecord['name'], string> = {
   profile: 'GitHub profile',
@@ -24,18 +29,20 @@ const STEP_LABELS: Record<SyncStepRecord['name'], string> = {
   analytics_snapshot: 'Analytics snapshot',
 }
 
-function statusLabel(status: SyncStepRecord['status']): string {
+const STEP_ORDER = Object.keys(STEP_LABELS) as SyncStepRecord['name'][]
+
+function StepIcon({ status }: { status: SyncStepRecord['status'] }) {
   switch (status) {
-    case 'running':
-      return 'In progress…'
     case 'success':
-      return 'Done'
+      return <CheckCircleIcon className="size-4 text-emerald-400" weight="fill" />
+    case 'running':
+      return <SpinnerIcon className="size-4 animate-spin text-primary" />
     case 'failed':
-      return 'Failed'
+      return <WarningCircleIcon className="size-4 text-destructive" weight="fill" />
     case 'skipped':
-      return 'Skipped'
+      return <CircleIcon className="size-4 text-muted-foreground" />
     default:
-      return 'Pending'
+      return <CircleIcon className="size-4 text-muted-foreground/50" />
   }
 }
 
@@ -63,11 +70,13 @@ export function SyncOnboarding() {
       if (latest?.steps) setSteps(latest.steps)
 
       if (result.ok) {
+        toast.success('Sync complete — welcome to DevPulse')
         router.replace('/dashboard')
         router.refresh()
       } else {
         setError(result.error)
         setRunning(false)
+        toast.error(result.error)
       }
     })()
 
@@ -77,45 +86,72 @@ export function SyncOnboarding() {
     }
   }, [router])
 
-  const displaySteps =
-    steps.length > 0
-      ? steps
-      : (Object.keys(STEP_LABELS) as SyncStepRecord['name'][]).map((name) => ({
-          name,
-          status: 'pending' as const,
-        }))
+  const displaySteps = useMemo(() => {
+    if (steps.length > 0) return steps
+    return STEP_ORDER.map((name) => ({
+      name,
+      status: 'pending' as const,
+    }))
+  }, [steps])
+
+  const completedCount = displaySteps.filter(
+    (step) => step.status === 'success' || step.status === 'skipped',
+  ).length
+  const progressValue = Math.round((completedCount / STEP_ORDER.length) * 100)
 
   return (
-    <div className="mx-auto w-full max-w-md space-y-6">
-      <div className="text-center">
-        <p className="font-heading text-sm font-medium tracking-wide text-primary">DevPulse</p>
-        <h1 className="font-heading mt-2 text-2xl font-semibold text-foreground">
-          Syncing your GitHub data
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <Card className="mx-auto w-full max-w-lg">
+      <CardHeader className="text-center">
+        <CardTitle className="text-lg">Syncing your GitHub data</CardTitle>
+        <CardDescription>
           {running
             ? 'This runs once after your first sign-in. It may take a minute.'
-            : 'Sync stopped.'}
-        </p>
-      </div>
+            : 'Sync stopped. You can sign out and try again after fixing the issue.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Progress</span>
+            <span>{progressValue}%</span>
+          </div>
+          <Progress value={running ? progressValue : progressValue} />
+        </div>
 
-      <ul className="space-y-2 rounded-lg border border-border bg-card p-4">
-        {displaySteps.map((step) => (
-          <li
-            key={step.name}
-            className="flex items-center justify-between gap-3 text-sm"
-          >
-            <span className="text-foreground">{STEP_LABELS[step.name]}</span>
-            <span className="text-muted-foreground">{statusLabel(step.status)}</span>
-          </li>
-        ))}
-      </ul>
+        <ul className="space-y-2">
+          {displaySteps.map((step) => (
+              <li
+                key={step.name}
+                className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <StepIcon status={step.status} />
+                  <span className="truncate text-sm text-foreground">
+                    {STEP_LABELS[step.name]}
+                  </span>
+                </div>
+                <span
+                  className={cn(
+                    'shrink-0 text-xs capitalize text-muted-foreground',
+                    step.status === 'failed' && 'text-destructive',
+                  )}
+                >
+                  {step.status === 'running'
+                    ? 'In progress'
+                    : step.status === 'success'
+                      ? 'Done'
+                      : step.status}
+                </span>
+              </li>
+          ))}
+        </ul>
 
-      {error ? (
-        <p className="text-center text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
+        {error ? (
+          <p className="text-center text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

@@ -2,7 +2,7 @@
 
 import 'server-only'
 
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/lib/db'
@@ -63,8 +63,21 @@ export async function runFullSync(): Promise<{ ok: true } | { ok: false; error: 
   }
 }
 
+async function hasRunningSync(userId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: syncRuns.id })
+    .from(syncRuns)
+    .where(and(eq(syncRuns.userId, userId), eq(syncRuns.status, 'running')))
+    .limit(1)
+  return rows.length > 0
+}
+
 export async function runManualRefresh(): Promise<{ ok: true } | { ok: false; error: string }> {
   const userId = await requireUserId()
+
+  if (await hasRunningSync(userId)) {
+    return { ok: false, error: 'A sync is already in progress.' }
+  }
 
   try {
     await runSyncPipeline({ userId, kind: 'manual' })

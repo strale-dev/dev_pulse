@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { AppProviders } from "@/components/providers/app-providers";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const spaceGroteskHeading = Space_Grotesk({
@@ -61,7 +63,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       )}
     >
       <body suppressHydrationWarning className="min-h-full flex flex-col">
-        {children}
+        <TooltipProvider>
+          <AppProviders>{children}</AppProviders>
+        </TooltipProvider>
       </body>
     </html>
   );
