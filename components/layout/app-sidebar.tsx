@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { SquaresFourIcon } from '@phosphor-icons/react'
+import { GitBranchIcon, SquaresFourIcon } from '@phosphor-icons/react'
 
 import { APP_NAV_ITEMS } from '@/components/layout/nav-config'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,7 @@ import { useUiStore } from '@/lib/stores/ui-store'
 
 const NAV_ICONS = {
   '/dashboard': SquaresFourIcon,
+  '/repositories': GitBranchIcon,
 } as const
 
 type AppSidebarProps = {

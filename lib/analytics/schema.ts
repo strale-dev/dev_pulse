@@ -22,6 +22,15 @@ export const analyticsSnapshotPayloadSchema = z.object({
       stars: z.number().int(),
     }),
   ),
+  repoCommitsLast90d: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        commits: z.number().int(),
+      }),
+    )
+    .optional(),
   activityTrend: z.enum(['up', 'down', 'flat']),
   windowDays: z.number().int(),
   avgCommitsPerActiveDay: z.number().nullable(),

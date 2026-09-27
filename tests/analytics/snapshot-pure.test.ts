@@ -104,6 +104,10 @@ describe('buildAnalyticsSnapshotPayload', () => {
       commitsLast90d: 2,
       stars: 40,
     })
+    expect(payload.repoCommitsLast90d).toEqual([
+      { id: '1', name: 'stars-repo', commits: 2 },
+      { id: '2', name: 'active-repo', commits: 12 },
+    ])
     expect(payload.totalIssues).toBe(1)
   })
 
@@ -122,6 +126,7 @@ describe('buildAnalyticsSnapshotPayload', () => {
 
     expect(payload.mostActiveHourUTC).toBeNull()
     expect(payload.topRepositories[0]?.commitsLast90d).toBe(0)
+    expect(payload.repoCommitsLast90d).toEqual([])
   })
 })
 

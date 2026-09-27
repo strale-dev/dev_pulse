@@ -86,6 +86,15 @@ export function buildAnalyticsSnapshotPayload(input: {
       commitsLast90d,
       stars,
     })),
+    ...(input.repoCommitsLast90d !== undefined
+      ? {
+          repoCommitsLast90d: input.repoCommitsLast90d.map((row) => ({
+            id: row.id.toString(),
+            name: row.name,
+            commits: row.commits,
+          })),
+        }
+      : {}),
     activityTrend,
     windowDays: input.windowDays,
     avgCommitsPerActiveDay,
