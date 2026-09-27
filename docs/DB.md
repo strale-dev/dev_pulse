@@ -267,6 +267,7 @@ Tracks every full/partial sync execution for debugging + backoff decisions.
 | `finished_at` | `timestamptz` | |
 | `steps` | `jsonb` not null default `'[]'::jsonb` | Array of `{name, status, ms, error?}` |
 | `github_rate_remaining` | `integer` | Snapshot of `x-ratelimit-remaining` at end |
+| `github_rate_reset` | `timestamptz` | Snapshot of `x-ratelimit-reset` (UTC) at end |
 | `error_message` | `text` | User-safe copy |
 
 Indexes:

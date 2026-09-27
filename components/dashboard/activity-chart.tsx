@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
+import { FadeSlideSwap } from '@/components/shared/fade-in'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -81,7 +82,7 @@ export function ActivityChart({ days }: ActivityChartProps) {
         {empty ? (
           <EmptyState title="Not enough activity in this range." />
         ) : (
-          <div className="overflow-x-auto">
+          <FadeSlideSwap swapKey={range} className="overflow-x-auto">
             <ChartContainer
               config={chartConfig}
               className={cn(
@@ -137,7 +138,7 @@ export function ActivityChart({ days }: ActivityChartProps) {
                 />
               </AreaChart>
             </ChartContainer>
-          </div>
+          </FadeSlideSwap>
         )}
       </CardContent>
     </Card>

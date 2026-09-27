@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { SignOutIcon, UserCircleIcon } from '@phosphor-icons/react'
+import { GearSixIcon, SignOutIcon } from '@phosphor-icons/react'
 
 import type { ShellUser } from '@/lib/dashboard/load-dashboard'
 import { createClient } from '@/lib/client'
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -42,16 +43,18 @@ export function UserMenu({ user }: { user: ShellUser }) {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuLabel className="font-normal">
-          <p className="truncate text-xs font-medium text-foreground">{user.displayName}</p>
-          {user.githubLogin ? (
-            <p className="truncate text-xs text-muted-foreground">@{user.githubLogin}</p>
-          ) : null}
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <p className="truncate text-xs font-medium text-foreground">{user.displayName}</p>
+            {user.githubLogin ? (
+              <p className="truncate text-xs text-muted-foreground">@{user.githubLogin}</p>
+            ) : null}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="text-muted-foreground">
-          <UserCircleIcon className="size-4" />
-          Settings (Phase 9)
+        <DropdownMenuItem onClick={() => router.push('/settings')}>
+          <GearSixIcon className="size-4" />
+          Settings
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={() => void signOut()}>
           <SignOutIcon className="size-4" />

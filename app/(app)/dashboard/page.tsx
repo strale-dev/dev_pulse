@@ -9,6 +9,7 @@ import { LanguageDonut } from '@/components/dashboard/language-donut'
 import { OverviewCards } from '@/components/dashboard/overview-cards'
 import { RecentActivityList } from '@/components/dashboard/recent-activity-list'
 import { TopReposPreview } from '@/components/dashboard/top-repos-preview'
+import { FadeIn } from '@/components/shared/fade-in'
 import { InsightSection } from '@/components/insights/insight-section'
 import { loadInsightView } from '@/lib/ai/insight-store'
 import { loadDashboard } from '@/lib/dashboard/load-dashboard'
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
   ])
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <FadeIn className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
         <h1 className="font-heading text-lg font-semibold text-foreground">Overview</h1>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -76,6 +77,6 @@ export default async function DashboardPage() {
         initial={insights.insight}
         generatedAt={insights.generatedAt}
       />
-    </div>
+    </FadeIn>
   )
 }

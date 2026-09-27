@@ -301,6 +301,7 @@ export const syncRuns = pgTable(
     finishedAt: timestamp('finished_at', { withTimezone: true }),
     steps: jsonb('steps').notNull().default(sql`'[]'::jsonb`),
     githubRateRemaining: integer('github_rate_remaining'),
+    githubRateReset: timestamp('github_rate_reset', { withTimezone: true }),
     errorMessage: text('error_message'),
   },
   (table) => [

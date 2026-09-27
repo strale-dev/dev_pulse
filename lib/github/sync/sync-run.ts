@@ -60,6 +60,7 @@ export async function updateSyncRun(input: {
   status?: SyncRunStatus
   finishedAt?: Date
   githubRateRemaining?: number | null
+  githubRateReset?: Date | null
   errorMessage?: string | null
 }) {
   await db
@@ -69,6 +70,7 @@ export async function updateSyncRun(input: {
       status: input.status,
       finishedAt: input.finishedAt,
       githubRateRemaining: input.githubRateRemaining ?? undefined,
+      githubRateReset: input.githubRateReset ?? undefined,
       errorMessage: input.errorMessage ?? undefined,
     })
     .where(eq(syncRuns.id, input.syncRunId))

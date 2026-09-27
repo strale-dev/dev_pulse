@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 
+import { CommandPalette } from '@/components/layout/command-palette'
 import { AppBrandBar, AppHeader } from '@/components/layout/app-header'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import type { ShellUser } from '@/lib/dashboard/load-dashboard'
@@ -53,6 +54,7 @@ export function AppShell({
       <div className="flex min-h-svh flex-col bg-background">
         <AppBrandBar href="/dashboard" />
         <AppHeader user={user} showRefresh={false} />
+        <CommandPalette />
         <main className="flex flex-1 flex-col">{children}</main>
       </div>
     )
@@ -62,7 +64,7 @@ export function AppShell({
     <div className="flex min-h-svh bg-background">
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-border lg:flex',
+          'hidden shrink-0 flex-col border-r border-border md:flex',
           sidebarCollapsed ? 'w-16' : 'w-60',
         )}
       >
@@ -71,7 +73,7 @@ export function AppShell({
       </aside>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="w-72 p-0">
+        <SheetContent side="bottom" className="max-h-[75vh] w-full p-0">
           <SheetHeader className="border-b border-border px-4 py-3">
             <SheetTitle className="font-heading text-sm text-primary">DevPulse</SheetTitle>
           </SheetHeader>
@@ -81,8 +83,9 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader user={user} showMobileNavTrigger showRefresh={showRefresh} />
-        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 xl:p-6">{children}</main>
       </div>
+      <CommandPalette />
     </div>
   )
 }

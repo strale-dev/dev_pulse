@@ -38,6 +38,7 @@ import {
   createGraphqlClient,
   createOctokit,
   getLastRateLimitRemaining,
+  getLastRateLimitReset,
   resetLastRateLimitRemaining,
 } from '@/lib/github/octokit'
 import {
@@ -329,6 +330,7 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
       status: hasSkippedSteps(steps) ? 'partial' : 'success',
       finishedAt: new Date(),
       githubRateRemaining: getLastRateLimitRemaining(),
+      githubRateReset: getLastRateLimitReset(),
     })
 
     await emit(syncRunId, options.onProgress, steps, 'Sync complete.')
@@ -347,6 +349,7 @@ export async function runSyncPipeline(options: RunSyncOptions): Promise<{ syncRu
       status: 'failed',
       finishedAt: new Date(),
       githubRateRemaining: getLastRateLimitRemaining(),
+      githubRateReset: getLastRateLimitReset(),
       errorMessage: message,
     })
     await emit(syncRunId, options.onProgress, steps, message)
