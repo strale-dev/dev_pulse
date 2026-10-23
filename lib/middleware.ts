@@ -2,6 +2,20 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Do not touch Supabase session cookies here — PKCE verifier must reach
+  // /auth/callback intact for exchangeCodeForSession.
+  if (pathname === '/auth/callback') {
+    return NextResponse.next({ request })
+  }
+
+  if (pathname === '/' && request.nextUrl.searchParams.has('code')) {
+    const callbackUrl = request.nextUrl.clone()
+    callbackUrl.pathname = '/auth/callback'
+    return NextResponse.redirect(callbackUrl)
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -43,7 +57,6 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  const pathname = request.nextUrl.pathname
   const isPublicRoute =
     pathname === '/' ||
     pathname.startsWith('/login') ||
@@ -64,22 +77,6 @@ export async function updateSession(request: NextRequest) {
       if (value) loginRedirect.headers.set(header, value)
     }
     return loginRedirect
-  }
-
-  const pathnameWithCode =
-    pathname === '/' && request.nextUrl.searchParams.has('code')
-  if (pathnameWithCode) {
-    const callbackUrl = request.nextUrl.clone()
-    callbackUrl.pathname = '/auth/callback'
-    const callbackRedirect = NextResponse.redirect(callbackUrl)
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      callbackRedirect.cookies.set(cookie)
-    })
-    for (const header of ['cache-control', 'expires', 'pragma'] as const) {
-      const value = supabaseResponse.headers.get(header)
-      if (value) callbackRedirect.headers.set(header, value)
-    }
-    return callbackRedirect
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
