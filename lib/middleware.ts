@@ -16,7 +16,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -24,6 +24,11 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) =>
+              supabaseResponse.headers.set(key, value)
+            )
+          }
         },
       },
     }
@@ -48,10 +53,33 @@ export async function updateSession(request: NextRequest) {
     pathname === '/oauth/consent'
 
   if (!user && !isPublicRoute) {
-    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    return NextResponse.redirect(url)
+    const loginRedirect = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      loginRedirect.cookies.set(cookie)
+    })
+    for (const header of ['cache-control', 'expires', 'pragma'] as const) {
+      const value = supabaseResponse.headers.get(header)
+      if (value) loginRedirect.headers.set(header, value)
+    }
+    return loginRedirect
+  }
+
+  const pathnameWithCode =
+    pathname === '/' && request.nextUrl.searchParams.has('code')
+  if (pathnameWithCode) {
+    const callbackUrl = request.nextUrl.clone()
+    callbackUrl.pathname = '/auth/callback'
+    const callbackRedirect = NextResponse.redirect(callbackUrl)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      callbackRedirect.cookies.set(cookie)
+    })
+    for (const header of ['cache-control', 'expires', 'pragma'] as const) {
+      const value = supabaseResponse.headers.get(header)
+      if (value) callbackRedirect.headers.set(header, value)
+    }
+    return callbackRedirect
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

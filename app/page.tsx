@@ -1,9 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string; next?: string }>;
+}) {
+  const params = await searchParams;
+  if (params.code) {
+    const query = new URLSearchParams({ code: params.code });
+    if (params.next) query.set("next", params.next);
+    redirect(`/auth/callback?${query.toString()}`);
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <main className="mx-auto flex w-full max-w-2xl flex-col items-center text-center">

@@ -1,24 +1,24 @@
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 import {
   resolveGitHubUserId,
   storeGitHubCredential,
 } from '@/lib/auth/store-github-credential'
 import { safeNextPathServer } from '@/lib/safe-next-path'
-import { createClient } from '@/lib/server'
 
 function siteOrigin() {
   const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   return url.replace(/\/$/, '')
 }
 
-function redirectToError(message: string) {
-  return NextResponse.redirect(
-    `${siteOrigin()}/auth/error?error=${encodeURIComponent(message)}`
-  )
+function redirectToError(request: NextRequest, message: string) {
+  const errorUrl = new URL('/auth/error', siteOrigin())
+  errorUrl.searchParams.set('error', message)
+  return NextResponse.redirect(errorUrl)
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next')
@@ -27,37 +27,62 @@ export async function GET(request: Request) {
 
   if (oauthError) {
     const message = oauthDescription ?? oauthError
-    return redirectToError(message)
+    return redirectToError(request, message)
   }
 
   if (!code) {
-    return redirectToError('Missing authorization code from GitHub.')
+    return redirectToError(request, 'Missing authorization code from GitHub.')
   }
 
-  const supabase = await createClient()
+  const destination = safeNextPathServer(next, '/dashboard', siteOrigin())
+  let response = NextResponse.redirect(`${siteOrigin()}${destination}`)
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet, headers) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+          if (headers) {
+            Object.entries(headers).forEach(([key, value]) =>
+              response.headers.set(key, value)
+            )
+          }
+        },
+      },
+    }
+  )
+
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    return redirectToError(error.message)
+    return redirectToError(request, error.message)
   }
 
   const session = data.session
   const user = session?.user
 
   if (!session || !user) {
-    return redirectToError('Could not establish a session after sign-in.')
+    return redirectToError(request, 'Could not establish a session after sign-in.')
   }
 
   const providerToken = session.provider_token
   if (!providerToken) {
     return redirectToError(
+      request,
       'GitHub access token was not returned. Enable provider token storage for the GitHub provider in Supabase Auth.'
     )
   }
 
   const githubUserId = resolveGitHubUserId(user)
   if (githubUserId === null) {
-    return redirectToError('Could not read your GitHub user id from the sign-in response.')
+    return redirectToError(request, 'Could not read your GitHub user id from the sign-in response.')
   }
 
   try {
@@ -69,9 +94,8 @@ export async function GET(request: Request) {
   } catch (storeError) {
     const message =
       storeError instanceof Error ? storeError.message : 'Failed to store GitHub credentials.'
-    return redirectToError(message)
+    return redirectToError(request, message)
   }
 
-  const destination = safeNextPathServer(next, '/dashboard', siteOrigin())
-  return NextResponse.redirect(`${siteOrigin()}${destination}`)
+  return response
 }
