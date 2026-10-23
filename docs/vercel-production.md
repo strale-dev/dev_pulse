@@ -1,6 +1,8 @@
 # Vercel production — DevPulse
 
-Production URL: `https://dev-pulse-delta-ten.vercel.app`
+Production URL (always use this in the browser): `https://dev-pulse-delta-ten.vercel.app`
+
+Deployment URLs like `dev-pulse-*-kostursubbm-9159s-projects.vercel.app` redirect to the alias automatically so OAuth PKCE cookies stay on one host.
 
 ## Environment variables
 

@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { redirectToCanonicalHost } from '@/lib/canonical-site-url'
+
 export async function updateSession(request: NextRequest) {
+  const canonicalRedirect = redirectToCanonicalHost(request)
+  if (canonicalRedirect) return canonicalRedirect
+
   const pathname = request.nextUrl.pathname
 
   // Do not touch Supabase session cookies here — PKCE verifier must reach

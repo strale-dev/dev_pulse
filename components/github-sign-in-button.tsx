@@ -22,6 +22,9 @@ export function GitHubSignInButton({
   const handleSignIn = async () => {
     setIsLoading(true)
     const supabase = createClient()
+    // Drop stale PKCE verifiers from a prior interrupted OAuth attempt.
+    await supabase.auth.signOut({ scope: 'local' })
+
     const siteUrl = browserSiteOrigin()
     const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`
 
