@@ -25,8 +25,8 @@ Redeploy after any env change.
 **Authentication → URL Configuration**
 
 - **Site URL:** `https://dev-pulse-delta-ten.vercel.app`
-- **Redirect URLs:**
+- **Redirect URLs:** (PKCE requires callback on the **same host** you used to start sign-in)
   - `https://dev-pulse-delta-ten.vercel.app/auth/callback`
-  - `https://*.vercel.app/auth/callback` (preview)
+  - `https://*.vercel.app/auth/callback` (team preview URLs; sign-in uses `window.location.origin`)
 
 **Providers → GitHub:** enabled, with **Save provider token** (or equivalent) so OAuth returns `provider_token`.

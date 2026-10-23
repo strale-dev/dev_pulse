@@ -5,15 +5,11 @@ import {
   resolveGitHubUserId,
   storeGitHubCredential,
 } from '@/lib/auth/store-github-credential'
+import { requestSiteOrigin } from '@/lib/request-site-origin'
 import { safeNextPathServer } from '@/lib/safe-next-path'
 
-function siteOrigin() {
-  const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  return url.replace(/\/$/, '')
-}
-
 function redirectToError(request: NextRequest, message: string) {
-  const errorUrl = new URL('/auth/error', siteOrigin())
+  const errorUrl = new URL('/auth/error', requestSiteOrigin(request))
   errorUrl.searchParams.set('error', message)
   return NextResponse.redirect(errorUrl)
 }
@@ -34,8 +30,9 @@ export async function GET(request: NextRequest) {
     return redirectToError(request, 'Missing authorization code from GitHub.')
   }
 
-  const destination = safeNextPathServer(next, '/dashboard', siteOrigin())
-  let response = NextResponse.redirect(`${siteOrigin()}${destination}`)
+  const origin = requestSiteOrigin(request)
+  const destination = safeNextPathServer(next, '/dashboard', origin)
+  let response = NextResponse.redirect(`${origin}${destination}`)
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

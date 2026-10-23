@@ -4,6 +4,7 @@ import { GithubLogo } from '@phosphor-icons/react'
 import { useState } from 'react'
 
 import { createClient } from '@/lib/client'
+import { browserSiteOrigin } from '@/lib/request-site-origin'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -19,15 +20,10 @@ export function GitHubSignInButton({
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSignIn = async () => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    if (!siteUrl) {
-      window.location.assign('/auth/error?error=Missing%20NEXT_PUBLIC_SITE_URL')
-      return
-    }
-
     setIsLoading(true)
     const supabase = createClient()
-    const redirectTo = `${siteUrl.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent(nextPath)}`
+    const siteUrl = browserSiteOrigin()
+    const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
