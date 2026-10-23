@@ -9,9 +9,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Do not touch Supabase session cookies here — PKCE verifier must reach
-  // /auth/callback intact for exchangeCodeForSession.
-  if (pathname === '/auth/callback') {
+  // PKCE verifier cookies must reach OAuth start + callback without a session refresh.
+  if (pathname === '/auth/callback' || pathname === '/auth/github') {
     return NextResponse.next({ request })
   }
 
