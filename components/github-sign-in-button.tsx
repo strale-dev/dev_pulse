@@ -22,13 +22,11 @@ export function GitHubSignInButton({
   const handleSignIn = async () => {
     setIsLoading(true)
     const supabase = createClient()
-    // Drop stale PKCE verifiers from a prior interrupted OAuth attempt.
-    await supabase.auth.signOut({ scope: 'local' })
 
     const siteUrl = browserSiteOrigin()
     const redirectTo = `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
         scopes: 'read:user user:email',
@@ -39,6 +37,13 @@ export function GitHubSignInButton({
     if (error) {
       setIsLoading(false)
       window.location.assign(`/auth/error?error=${encodeURIComponent(error.message)}`)
+      return
+    }
+
+    if (data.url) {
+      window.location.assign(data.url)
+    } else {
+      setIsLoading(false)
     }
   }
 
