@@ -4,11 +4,9 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
 import * as schema from './schema'
+import { resolveDatabaseUrl } from './resolve-database-url'
 
-const url = process.env.DATABASE_URL
-if (!url) {
-  throw new Error('Missing DATABASE_URL')
-}
+const url = resolveDatabaseUrl()
 
 const pool = new Pool({
   connectionString: url,
